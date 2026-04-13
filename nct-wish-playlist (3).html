@@ -1,0 +1,771 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NCT WISH Playlist Maker</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<style>
+  /* ── 전역 변수 ── */
+  :root {
+    --accent: #b8f8fb;
+    --accent-dark: #5ee8ee;
+    --accent-dim: rgba(184,248,251,0.12);
+    --bg: #08090d;
+    --surface: #10121a;
+    --surface2: #181c28;
+    --border: rgba(184,248,251,0.18);
+    --text: #eef6ff;
+    --text-muted: rgba(238,246,255,0.45);
+    --font-display: 'Playfair Display', serif;
+    --font-body: 'DM Sans', sans-serif;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-body);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 48px 20px 80px;
+  }
+
+  /* ── 헤더 ── */
+  .site-header {
+    text-align: center;
+    margin-bottom: 48px;
+  }
+  .site-header .badge {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--accent);
+    border: 1px solid var(--border);
+    border-radius: 100px;
+    padding: 4px 14px;
+    margin-bottom: 16px;
+  }
+  .site-header h1 {
+    font-family: var(--font-display);
+    font-size: clamp(2rem, 6vw, 3.6rem);
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    color: var(--text);
+    line-height: 1.1;
+  }
+  .site-header h1 span { color: var(--accent); }
+  .site-header p {
+    margin-top: 12px;
+    font-size: 14px;
+    color: var(--text-muted);
+    font-weight: 300;
+  }
+
+  /* ── 레이아웃 ── */
+  .layout {
+    display: grid;
+    grid-template-columns: 1fr 420px;
+    gap: 32px;
+    width: 100%;
+    max-width: 1100px;
+    align-items: start;
+  }
+  @media (max-width: 860px) {
+    .layout { grid-template-columns: 1fr; }
+  }
+
+  /* ── 패널 공통 ── */
+  .panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 28px;
+  }
+  .panel-title {
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 20px;
+  }
+
+  /* ── 검색 패널 ── */
+  .search-wrap {
+    position: relative;
+    margin-bottom: 16px;
+  }
+  .search-wrap input {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 12px 16px 12px 44px;
+    font-family: var(--font-body);
+    font-size: 14px;
+    color: var(--text);
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .search-wrap input::placeholder { color: var(--text-muted); }
+  .search-wrap input:focus { border-color: var(--accent-dark); }
+  .search-icon {
+    position: absolute;
+    left: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-muted);
+    font-size: 16px;
+    pointer-events: none;
+  }
+
+  /* 앨범 필터 */
+  .filter-row {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 16px;
+  }
+  .filter-btn {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 100px;
+    padding: 5px 14px;
+    font-family: var(--font-body);
+    font-size: 12px;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .filter-btn.active,
+  .filter-btn:hover {
+    background: var(--accent-dim);
+    border-color: var(--accent-dark);
+    color: var(--accent);
+  }
+
+  /* 곡 목록 */
+  .song-list {
+    max-height: 480px;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+  }
+  .song-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: background 0.15s;
+    user-select: none;
+  }
+  .song-item:hover { background: var(--accent-dim); }
+  .song-item.selected { background: rgba(184,248,251,0.08); }
+
+  .song-check {
+    width: 18px;
+    height: 18px;
+    border: 1.5px solid var(--border);
+    border-radius: 5px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s;
+  }
+  .song-item.selected .song-check {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: var(--bg);
+  }
+  .song-check-tick { font-size: 11px; font-weight: 700; }
+
+  .song-info { flex: 1; min-width: 0; }
+  .song-title {
+    font-size: 14px;
+    font-weight: 400;
+    color: var(--text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .song-sub {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-top: 2px;
+  }
+
+  .no-results {
+    text-align: center;
+    padding: 40px 0;
+    color: var(--text-muted);
+    font-size: 14px;
+  }
+
+  /* ── 카드 미리보기 패널 ── */
+  .preview-panel { position: sticky; top: 24px; }
+
+  /* 닉네임 입력 */
+  .nickname-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+  .nickname-row label { font-size: 12px; color: var(--text-muted); white-space: nowrap; }
+  .nickname-row input {
+    flex: 1;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 8px 14px;
+    font-family: var(--font-body);
+    font-size: 14px;
+    color: var(--accent);
+    font-weight: 500;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .nickname-row input:focus { border-color: var(--accent-dark); }
+
+  /* ── 카드 (캡처 대상) ── */
+  #card {
+    width: 360px;
+    min-height: 480px;
+    background: #0a0e18;
+    border: 1px solid rgba(184,248,251,0.25);
+    border-radius: 24px;
+    padding: 36px 32px 32px;
+    position: relative;
+    overflow: hidden;
+    font-family: var(--font-body);
+  }
+
+  /* 카드 배경 장식 */
+  #card::before {
+    content: '';
+    position: absolute;
+    top: -80px; right: -80px;
+    width: 280px; height: 280px;
+    background: radial-gradient(circle, rgba(184,248,251,0.12) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  #card::after {
+    content: 'NCT WISH';
+    position: absolute;
+    bottom: 24px; right: 28px;
+    font-family: var(--font-display);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    color: rgba(184,248,251,0.2);
+    text-transform: uppercase;
+  }
+
+  /* 카드 헤더 */
+  .card-label {
+    font-size: 9px;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: #b8f8fb;
+    opacity: 0.6;
+    margin-bottom: 18px;
+  }
+  .card-nickname {
+    font-family: var(--font-display);
+    font-size: 26px;
+    font-weight: 700;
+    color: #b8f8fb;
+    line-height: 1.15;
+    margin-bottom: 4px;
+  }
+  .card-subtitle {
+    font-size: 11px;
+    color: rgba(184,248,251,0.45);
+    margin-bottom: 28px;
+    font-weight: 300;
+  }
+
+  /* 카드 구분선 */
+  .card-divider {
+    width: 100%;
+    height: 1px;
+    background: linear-gradient(90deg, rgba(184,248,251,0.3) 0%, transparent 100%);
+    margin-bottom: 20px;
+  }
+
+  .card-section-title {
+    font-size: 8px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: rgba(184,248,251,0.35);
+    margin-bottom: 14px;
+  }
+
+  /* 카드 곡 목록 */
+  #card-songs { list-style: none; }
+  #card-songs li {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 5px 0;
+    border-bottom: 1px solid rgba(184,248,251,0.06);
+  }
+  #card-songs li:last-child { border-bottom: none; }
+
+  .card-num {
+    font-size: 9px;
+    color: rgba(184,248,251,0.3);
+    font-weight: 500;
+    width: 14px;
+    flex-shrink: 0;
+    text-align: right;
+  }
+  .card-artwork {
+    width: 32px;
+    height: 32px;
+    border-radius: 5px;
+    flex-shrink: 0;
+    background: rgba(184,248,251,0.08);
+    object-fit: cover;
+  }
+  .card-artwork-placeholder {
+    width: 32px;
+    height: 32px;
+    border-radius: 5px;
+    flex-shrink: 0;
+    background: rgba(184,248,251,0.08);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+  }
+  .card-song-title {
+    font-size: 12px;
+    color: #eef6ff;
+    font-weight: 400;
+    line-height: 1.3;
+    flex: 1;
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .card-empty {
+    text-align: center;
+    padding: 40px 0;
+    font-size: 13px;
+    color: rgba(184,248,251,0.25);
+    font-style: italic;
+  }
+
+  /* ── 다운로드 버튼 ── */
+  .btn-download {
+    margin-top: 20px;
+    width: 100%;
+    padding: 13px;
+    background: var(--accent);
+    color: var(--bg);
+    border: none;
+    border-radius: 12px;
+    font-family: var(--font-body);
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    letter-spacing: 0.02em;
+    transition: opacity 0.15s, transform 0.1s;
+  }
+  .btn-download:hover { opacity: 0.88; }
+  .btn-download:active { transform: scale(0.98); }
+  .btn-download:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  /* 선택 카운트 */
+  .count-badge {
+    display: inline-block;
+    margin-left: 8px;
+    background: var(--accent-dim);
+    color: var(--accent);
+    border-radius: 100px;
+    padding: 1px 8px;
+    font-size: 11px;
+    font-weight: 500;
+    vertical-align: middle;
+  }
+</style>
+</head>
+<body>
+
+<!-- ── 헤더 ── -->
+<header class="site-header">
+  <div class="badge">Playlist Maker</div>
+  <h1>취향의 <span>NCT WISH</span></h1>
+  <p>좋아하는 곡을 골라 나만의 플레이리스트 카드를 만들어보세요</p>
+</header>
+
+<!-- ── 메인 레이아웃 ── -->
+<div class="layout">
+
+  <!-- 왼쪽: 검색 + 곡 선택 -->
+  <div class="panel">
+    <div class="panel-title">
+      곡 선택
+      <span class="count-badge" id="count-badge">0개 선택</span>
+    </div>
+
+    <!-- 검색 -->
+    <div class="search-wrap">
+      <span class="search-icon">🔍</span>
+      <input type="text" id="search-input" placeholder="곡 제목 검색...">
+    </div>
+
+    <!-- 앨범 필터 -->
+    <div class="filter-row" id="filter-row">
+      <button class="filter-btn active" data-album="all">전체</button>
+      <button class="filter-btn" data-album="Pre-Debut">Pre-Debut</button>
+      <button class="filter-btn" data-album="WISH">WISH</button>
+      <button class="filter-btn" data-album="Songbird">Songbird</button>
+      <button class="filter-btn" data-album="Steady">Steady</button>
+      <button class="filter-btn" data-album="WISHFUL">WISHFUL</button>
+      <button class="filter-btn" data-album="poppop">poppop</button>
+      <button class="filter-btn" data-album="Surf">Surf</button>
+      <button class="filter-btn" data-album="COLOR">COLOR</button>
+      <button class="filter-btn" data-album="WISHLIST">WISHLIST</button>
+      <button class="filter-btn" data-album="Ode to Love">Ode to Love</button>
+    </div>
+
+    <!-- 곡 목록 -->
+    <div class="song-list" id="song-list"></div>
+  </div>
+
+  <!-- 오른쪽: 카드 미리보기 -->
+  <div class="panel preview-panel">
+    <div class="panel-title">카드 미리보기</div>
+
+    <!-- 닉네임 -->
+    <div class="nickname-row">
+      <label>닉네임</label>
+      <input type="text" id="nickname-input" value="위시니" maxlength="20">
+    </div>
+
+    <!-- 카드 -->
+    <div id="card">
+      <div class="card-label">NCT WISH · Playlist</div>
+      <div class="card-nickname" id="card-nickname">위시니</div>
+      <div class="card-subtitle">의 플레이리스트</div>
+      <div class="card-divider"></div>
+      <div class="card-section-title">My Favorite Songs</div>
+      <ul id="card-songs">
+        <li><span class="card-empty">곡을 선택해주세요</span></li>
+      </ul>
+    </div>
+
+    <!-- 다운로드 버튼 -->
+    <button class="btn-download" id="download-btn">이미지로 저장하기</button>
+  </div>
+
+</div>
+
+<script>
+/* ───────────────────────────────────────────
+   1. 데이터: NCT WISH 전곡 목록
+─────────────────────────────────────────── */
+const songs = [
+  // Pre-Debut
+  { title: "Hands Up", titleKo: "",  album: "Pre-Debut", year: 2023 },
+  { title: "We Go",    titleKo: "",  album: "Pre-Debut", year: 2023 },
+
+  // WISH (1st Single Album)
+  { title: "WISH (Korean Ver.)",              titleKo: "",                           album: "WISH", year: 2024 },
+  { title: "WISH (Japanese Ver.)",            titleKo: "",                           album: "WISH", year: 2024 },
+  { title: "Sail Away (Korean Ver.)",         titleKo: "",                           album: "WISH", year: 2024 },
+  { title: "Sail Away (Japanese Ver.)",       titleKo: "",                           album: "WISH", year: 2024 },
+  { title: "Songbird (Korean Ver.)",          titleKo: "",                           album: "Songbird", year: 2024 },
+  { title: "Tears Are Falling (Korean Ver.)", titleKo: "눈물이 뚝뚝 (Korean Ver.)", album: "Songbird", year: 2024 },
+
+  // Steady (1st Mini Album)
+  { title: "Steady",    titleKo: "",    album: "Steady", year: 2024 },
+  { title: "Dunk Shot", titleKo: "",    album: "Steady", year: 2024 },
+  { title: "3 Minutes", titleKo: "3분", album: "Steady", year: 2024 },
+  { title: "On & On",   titleKo: "",    album: "Steady", year: 2024 },
+  { title: "Supercute", titleKo: "",    album: "Steady", year: 2024 },
+  { title: "Skate",     titleKo: "",    album: "Steady", year: 2024 },
+  { title: "Hands Up (Korean Ver.)", titleKo: "", album: "Steady", year: 2024 },
+
+  // WISHFUL (2nd Mini Album)
+  { title: "Miracle",                    titleKo: "미라클",          album: "WISHFUL", year: 2025 },
+  { title: "Make You Shine",             titleKo: "",                album: "WISHFUL", year: 2025 },
+  { title: "Surf",                       titleKo: "",                album: "WISHFUL", year: 2025 },
+  { title: "1000",                       titleKo: "",                album: "WISHFUL", year: 2025 },
+  { title: "Dreamcatcher",               titleKo: "",                album: "WISHFUL", year: 2025 },
+  { title: "If You Love Me Let Me Know", titleKo: "사랑한다면 말해줘", album: "WISHFUL", year: 2025 },
+
+  // poppop (2nd Mini Album)
+  { title: "poppop",     titleKo: "", album: "poppop", year: 2025 },
+  { title: "GALAXY",     titleKo: "", album: "poppop", year: 2025 },
+  { title: "Waterfall",  titleKo: "", album: "poppop", year: 2025 },
+  { title: "Electric",   titleKo: "", album: "poppop", year: 2025 },
+  { title: "Lucky Star", titleKo: "", album: "poppop", year: 2025 },
+
+  // Surf (Digital Single)
+  { title: "Surf (Single)", titleKo: "", album: "Surf", year: 2025 },
+
+  // COLOR (3rd Mini Album)
+  { title: "Color",        titleKo: "", album: "COLOR", year: 2025 },
+  { title: "1000 (Full)",  titleKo: "", album: "COLOR", year: 2025 },
+  { title: "Honey",        titleKo: "", album: "COLOR", year: 2025 },
+  { title: "Wishing Star", titleKo: "", album: "COLOR", year: 2025 },
+
+  // WISHLIST (1st Japanese Mini Album)
+  { title: "Hello Mellow",                 titleKo: "",          album: "WISHLIST", year: 2026 },
+  { title: "ZONE",                         titleKo: "",          album: "WISHLIST", year: 2026 },
+  { title: "BUBBLE GUM",                   titleKo: "",          album: "WISHLIST", year: 2026 },
+  { title: "Dreamcatcher (Japanese Ver.)", titleKo: "",          album: "WISHLIST", year: 2026 },
+  { title: "SOMEDAY",                      titleKo: "",          album: "WISHLIST", year: 2026 },
+  { title: "Good Morning",                 titleKo: "",          album: "WISHLIST", year: 2026 },
+  { title: "poppop (Japanese Ver.)",       titleKo: "",          album: "WISHLIST", year: 2026 },
+  { title: "Same Sky",                     titleKo: "같은 하늘", album: "WISHLIST", year: 2026 },
+
+  // Ode to Love (1st Studio Album)
+  { title: "Ode to Love",   titleKo: "",     album: "Ode to Love", year: 2026 },
+  { title: "My Everything", titleKo: "",     album: "Ode to Love", year: 2026 },
+  { title: "Bloom",         titleKo: "",     album: "Ode to Love", year: 2026 },
+  { title: "Forever Young", titleKo: "",     album: "Ode to Love", year: 2026 },
+  { title: "Promise",       titleKo: "약속", album: "Ode to Love", year: 2026 },
+];
+
+/* ───────────────────────────────────────────
+   2. 앨범별 iTunes ID 맵
+   (iTunes Search API: itunes.apple.com/lookup?id=...&entity=album)
+─────────────────────────────────────────── */
+const ALBUM_ITUNES_ID = {
+  "Pre-Debut":    "1698682537",  // Hands Up - Single
+  "WISH":         "1732218887",  // WISH - EP
+  "Songbird":     "1753956701",  // Songbird - Single (Korean)
+  "Steady":       "1766692130",  // Steady - The 1st Mini Album
+  "WISHFUL":      "1781172135",  // WISHFUL (Japanese album)
+  "poppop":       "1805788241",  // poppop - The 2nd Mini Album
+  "Surf":         "1830381182",  // Surf - Single
+  "COLOR":        "1834119254",  // COLOR - The 3rd Mini Album
+  "WISHLIST":     "1862069660",  // WISHLIST
+  "Ode to Love":  "1805788241",  // 정식 발매 전 임시 fallback
+};
+
+/* ───────────────────────────────────────────
+   3. 아트워크 캐시 & 로딩
+─────────────────────────────────────────── */
+const artworkCache = {};  // { albumName: imageUrl }
+
+async function fetchArtwork(albumName) {
+  if (artworkCache[albumName]) return artworkCache[albumName];
+  const id = ALBUM_ITUNES_ID[albumName];
+  if (!id) return null;
+  try {
+    const res  = await fetch(`https://itunes.apple.com/lookup?id=${id}`);
+    const data = await res.json();
+    const result = data.results?.[0];
+    if (!result) return null;
+    // artworkUrl100 → 600x600으로 크기 업스케일
+    const url = (result.artworkUrl100 || '').replace('100x100bb', '600x600bb');
+    artworkCache[albumName] = url || null;
+    return artworkCache[albumName];
+  } catch {
+    return null;
+  }
+}
+
+// 페이지 로드 시 모든 앨범 아트워크 미리 가져오기
+async function prefetchAllArtworks() {
+  const albumNames = [...new Set(songs.map(s => s.album))];
+  await Promise.all(albumNames.map(fetchArtwork));
+  renderCard();  // 아트워크 로드 완료 후 카드 갱신
+}
+
+/* ───────────────────────────────────────────
+   4. 헬퍼: 표시 제목 (한글 있으면 한글 우선)
+─────────────────────────────────────────── */
+function displayTitle(song) {
+  return song.titleKo || song.title;
+}
+
+/* ───────────────────────────────────────────
+   5. 상태 관리
+─────────────────────────────────────────── */
+let selectedSongs = [];
+let currentFilter = 'all';
+let searchQuery   = '';
+
+/* ───────────────────────────────────────────
+   6. DOM 렌더링: 곡 목록
+─────────────────────────────────────────── */
+function getFilteredSongs() {
+  return songs.filter(s => {
+    const matchAlbum  = currentFilter === 'all' || s.album === currentFilter;
+    const q = searchQuery.toLowerCase();
+    const matchSearch = s.title.toLowerCase().includes(q)
+                     || (s.titleKo && s.titleKo.toLowerCase().includes(q));
+    return matchAlbum && matchSearch;
+  });
+}
+
+function renderSongList() {
+  const list     = document.getElementById('song-list');
+  const filtered = getFilteredSongs();
+  list.innerHTML = '';
+
+  if (filtered.length === 0) {
+    list.innerHTML = '<div class="no-results">검색 결과가 없어요 🎵</div>';
+    return;
+  }
+
+  filtered.forEach(song => {
+    const isSelected = selectedSongs.includes(song.title);
+    const item = document.createElement('div');
+    item.className = 'song-item' + (isSelected ? ' selected' : '');
+    const mainTitle = displayTitle(song);
+    const subTitle  = song.titleKo ? song.title : '';
+    item.innerHTML = `
+      <div class="song-check">
+        ${isSelected ? '<span class="song-check-tick">✓</span>' : ''}
+      </div>
+      <div class="song-info">
+        <div class="song-title">${mainTitle}</div>
+        <div class="song-sub">${subTitle ? subTitle + ' · ' : ''}${song.album} · ${song.year}</div>
+      </div>
+    `;
+    item.addEventListener('click', () => toggleSong(song.title));
+    list.appendChild(item);
+  });
+}
+
+/* ───────────────────────────────────────────
+   7. 곡 선택 / 해제
+─────────────────────────────────────────── */
+function toggleSong(title) {
+  const idx = selectedSongs.indexOf(title);
+  if (idx === -1) {
+    selectedSongs.push(title);
+  } else {
+    selectedSongs.splice(idx, 1);
+  }
+  renderSongList();
+  renderCard();
+  updateBadge();
+}
+
+function updateBadge() {
+  document.getElementById('count-badge').textContent =
+    selectedSongs.length + '개 선택';
+}
+
+/* ───────────────────────────────────────────
+   8. 카드 렌더링 (아트워크 포함)
+─────────────────────────────────────────── */
+function renderCard() {
+  const cardSongs = document.getElementById('card-songs');
+
+  if (selectedSongs.length === 0) {
+    cardSongs.innerHTML = '<li><span class="card-empty">곡을 선택해주세요</span></li>';
+    return;
+  }
+
+  cardSongs.innerHTML = selectedSongs.map((title, i) => {
+    const song       = songs.find(s => s.title === title);
+    const shownTitle = song ? displayTitle(song) : title;
+    const artwork    = song ? artworkCache[song.album] : null;
+
+    const artworkEl = artwork
+      ? `<img class="card-artwork" src="${artwork}" alt="${song.album}" crossorigin="anonymous">`
+      : `<div class="card-artwork-placeholder">🎵</div>`;
+
+    return `
+      <li>
+        <span class="card-num">${String(i + 1).padStart(2, '0')}</span>
+        ${artworkEl}
+        <span class="card-song-title">${shownTitle}</span>
+      </li>
+    `;
+  }).join('');
+}
+
+/* ───────────────────────────────────────────
+   9. 닉네임 실시간 반영
+─────────────────────────────────────────── */
+document.getElementById('nickname-input').addEventListener('input', function() {
+  document.getElementById('card-nickname').textContent = this.value || '위시니';
+});
+
+/* ───────────────────────────────────────────
+   10. 검색 필터
+─────────────────────────────────────────── */
+document.getElementById('search-input').addEventListener('input', function() {
+  searchQuery = this.value;
+  renderSongList();
+});
+
+/* ───────────────────────────────────────────
+   11. 앨범 필터 버튼
+─────────────────────────────────────────── */
+document.getElementById('filter-row').addEventListener('click', function(e) {
+  const btn = e.target.closest('.filter-btn');
+  if (!btn) return;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  currentFilter = btn.dataset.album;
+  renderSongList();
+});
+
+/* ───────────────────────────────────────────
+   12. 이미지 다운로드 (html2canvas)
+─────────────────────────────────────────── */
+document.getElementById('download-btn').addEventListener('click', async function() {
+  if (selectedSongs.length === 0) {
+    alert('곡을 한 곡 이상 선택해주세요!');
+    return;
+  }
+
+  this.disabled    = true;
+  this.textContent = '이미지 생성 중...';
+
+  try {
+    const card   = document.getElementById('card');
+    const canvas = await html2canvas(card, {
+      scale: 3,
+      useCORS: true,
+      allowTaint: false,
+      backgroundColor: '#0a0e18',
+      logging: false
+    });
+
+    const link     = document.createElement('a');
+    const nickname = document.getElementById('nickname-input').value || '위시니';
+    link.download  = `nct-wish-playlist_${nickname}.png`;
+    link.href      = canvas.toDataURL('image/png');
+    link.click();
+  } catch (err) {
+    alert('이미지 생성 중 오류가 발생했어요.');
+    console.error(err);
+  } finally {
+    this.disabled    = false;
+    this.textContent = '이미지로 저장하기';
+  }
+});
+
+/* ───────────────────────────────────────────
+   13. 초기 렌더 + 아트워크 프리패치
+─────────────────────────────────────────── */
+renderSongList();
+renderCard();
+prefetchAllArtworks();
+</script>
+</body>
+</html>
