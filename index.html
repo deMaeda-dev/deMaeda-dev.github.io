@@ -431,7 +431,7 @@
     <!-- 앨범 필터 -->
     <div class="filter-row" id="filter-row">
       <button class="filter-btn active" data-album="all">전체</button>
-      <button class="filter-btn" data-album="Pre-Debut">Pre-Debut</button>
+      <button class="filter-btn" data-album="Hands Up">Hands Up</button>
       <button class="filter-btn" data-album="WISH">WISH</button>
       <button class="filter-btn" data-album="Songbird">Songbird</button>
       <button class="filter-btn" data-album="Steady">Steady</button>
@@ -480,9 +480,9 @@
    1. 데이터: NCT WISH 전곡 목록
 ─────────────────────────────────────────── */
 const songs = [
-  // Pre-Debut
-  { title: "Hands Up", titleKo: "",  album: "Pre-Debut", year: 2023 },
-  { title: "We Go",    titleKo: "",  album: "Pre-Debut", year: 2023 },
+  // Hands Up
+  { title: "Hands Up", titleKo: "",  album: "Hands Up", year: 2023 },
+  { title: "We Go",    titleKo: "",  album: "Hands Up", year: 2023 },
 
   // WISH (1st Single Album)
   { title: "WISH (Korean Ver.)",              titleKo: "",                           album: "WISH", year: 2024 },
@@ -517,11 +517,11 @@ const songs = [
   { title: "Lucky Star", titleKo: "", album: "poppop", year: 2025 },
 
   // Surf (Digital Single)
-  { title: "Surf (Single)", titleKo: "", album: "Surf", year: 2025 },
+  { title: "Surf", titleKo: "", album: "Surf", year: 2025 },
 
   // COLOR (3rd Mini Album)
   { title: "Color",        titleKo: "", album: "COLOR", year: 2025 },
-  { title: "1000 (Full)",  titleKo: "", album: "COLOR", year: 2025 },
+  { title: "1000",  titleKo: "", album: "COLOR", year: 2025 },
   { title: "Honey",        titleKo: "", album: "COLOR", year: 2025 },
   { title: "Wishing Star", titleKo: "", album: "COLOR", year: 2025 },
 
@@ -548,16 +548,16 @@ const songs = [
    (iTunes Search API: itunes.apple.com/lookup?id=...&entity=album)
 ─────────────────────────────────────────── */
 const ALBUM_ITUNES_ID = {
-  "Pre-Debut":    "1698682537",  // Hands Up - Single
-  "WISH":         "1732218887",  // WISH - EP
-  "Songbird":     "1753956701",  // Songbird - Single (Korean)
+  "Hands Up":    "1710341216",  // Hands Up - Single
+  "WISH":         "1730841080",  // WISH - EP
+  "Songbird":     "1753025502",  // Songbird - Single (Korean)
   "Steady":       "1766692130",  // Steady - The 1st Mini Album
   "WISHFUL":      "1781292688",  // WISHFUL (Japanese album)
   "poppop":       "1805788241",  // poppop - The 2nd Mini Album
   "Surf":         "1830381182",  // Surf - Single
   "COLOR":        "1834119254",  // COLOR - The 3rd Mini Album
   "WISHLIST":     "1863900895",  // WISHLIST
-  "Ode to Love":  "1805788241",  // 정식 발매 전 임시 fallback
+  "Ode to Love":  "1859547369",  // 정식 발매 전 임시 fallback
 };
 
 /* ───────────────────────────────────────────
